@@ -13,22 +13,22 @@ const VOICE_VOLUME = 0.38;
 const MOODS = [
   {
     id: "anxious",
-    label: "Ansiosa",
+    label: "Ansiedad",
     hint: "Para bajar la urgencia interna y encontrar espacio.",
   },
   {
     id: "stressed",
-    label: "Estresada",
+    label: "Estrés",
     hint: "Para soltar tensión acumulada en el cuerpo.",
   },
   {
     id: "tired",
-    label: "Cansada",
+    label: "Cansancio",
     hint: "Para descansar sin desconectarte del todo.",
   },
   {
     id: "distracted",
-    label: "Distraída",
+    label: "Distracción",
     hint: "Para volver al presente con suavidad.",
   },
   {
@@ -39,11 +39,11 @@ const MOODS = [
   {
     id: "sleep better",
     label: "Dormir mejor",
-    hint: "Para preparar una noche más tranquila.",
+    hint: "Para preparar una noche más calma.",
   },
   {
     id: "balanced",
-    label: "Equilibrada",
+    label: "Equilibrio",
     hint: "Para sostener calma y claridad.",
   },
 ];
@@ -168,138 +168,145 @@ const MUSIC_THEMES = {
 
 const POSTURE_ROUTINES = {
   anxious: {
-    name: "Soltar el pecho",
-    objective: "Bajar ansiedad y aflojar el torso",
+    name: "Pausa tranquilizante en silla",
+    category: "Posturas tranquilizantes",
+    objective: "Interiorizar, bajar la activación y dar descanso mental",
     poses: [
-      { id: "seated", name: "Sentada con manos al corazón", cue: "Apoyá los pies y suavizá los hombros." },
-      { id: "arms-up", name: "Brazos arriba", cue: "Inhalá alargando costados sin tensionar el cuello." },
-      { id: "twist", name: "Torsión sentada", cue: "Girate suave hacia un lado y luego hacia el otro." },
-      { id: "forward-fold", name: "Pinza sentada", cue: "Cerrate hacia adelante y soltá la cabeza." },
-      { id: "seated", name: "Cierre en quietud", cue: "Volvé al centro y observá el cuerpo." },
+      { id: "seated", name: "Anclaje en la silla", cue: "Apoyá ambos pies y sentí el peso del cuerpo." },
+      { id: "shoulders", name: "Descenso de hombros", cue: "Subí y bajá hombros lento, sin apurar la respiración." },
+      { id: "forward-fold", name: "Flexión hacia adelante", cue: "Cerrá el torso sobre las piernas y soltá la cabeza." },
+      { id: "side-stretch", name: "Costado blando", cue: "Estirá un lado, volvé al centro y cambiá." },
+      { id: "seated", name: "Quietud sentada", cue: "Volvé a la vertical y quedate respirando natural." },
     ],
   },
   stressed: {
-    name: "Descarga suave",
-    objective: "Aflojar hombros, cuello y espalda alta",
+    name: "Descarga laboral",
+    category: "Posturas tranquilizantes",
+    objective: "Soltar cuello, hombros y espalda alta desde la silla",
     poses: [
-      { id: "shoulders", name: "Círculos de hombros", cue: "Mové hombros lento hacia atrás y hacia abajo." },
-      { id: "side-stretch", name: "Estiramiento lateral", cue: "Llevá un brazo arriba y abrí un costado." },
-      { id: "twist", name: "Torsión sentada", cue: "Girate sin forzar y respirá en la espalda." },
-      { id: "forward-fold", name: "Pinza suave", cue: "Dejá que el peso te cierre hacia adelante." },
-      { id: "seated", name: "Manos sobre piernas", cue: "Quedate quieta y soltá la mandíbula." },
+      { id: "shoulders", name: "Círculos de hombros", cue: "Mové hombros hacia atrás y hacia abajo." },
+      { id: "heart-opener", name: "Apertura de pecho", cue: "Tomá el respaldo o los bordes de la silla y abrí clavículas." },
+      { id: "twist", name: "Torsión de oficina", cue: "Girá suave usando el respaldo como apoyo." },
+      { id: "forward-fold", name: "Descanso hacia adelante", cue: "Dejá que el torso caiga sobre las piernas." },
+      { id: "seated", name: "Mandíbula suelta", cue: "Volvé al centro y aflojá rostro, manos y abdomen." },
     ],
   },
   tired: {
-    name: "Descanso despierto",
-    objective: "Recuperar energía sin exigencia",
+    name: "Activación amable",
+    category: "Posturas vitalizantes",
+    objective: "Subir energía con extensión, apertura y movimiento dinámico",
     poses: [
-      { id: "seated", name: "Base sentada", cue: "Sentate cómoda y apoyá bien la pelvis." },
-      { id: "arms-up", name: "Alargar columna", cue: "Subí brazos y crecé desde la cintura." },
-      { id: "side-stretch", name: "Abrir costados", cue: "Estirá un lado y después el otro." },
-      { id: "heart-opener", name: "Abrir pecho", cue: "Llevá hombros atrás y abrí el corazón." },
-      { id: "seated", name: "Integrar", cue: "Respirá natural y notá la energía disponible." },
+      { id: "seated", name: "Base activa", cue: "Sentate cerca del borde y apoyá firme los pies." },
+      { id: "arms-up", name: "Brazos arriba dinámicos", cue: "Subí brazos al inhalar y bajalos al exhalar." },
+      { id: "heart-opener", name: "Extensión de pecho", cue: "Abrí el pecho hacia adelante sin comprimir la cintura." },
+      { id: "side-stretch", name: "Costados despiertos", cue: "Alargá un costado y después el otro." },
+      { id: "shoulders", name: "Hombros energizantes", cue: "Hacé círculos amplios para activar la espalda alta." },
     ],
   },
   distracted: {
-    name: "Volver al centro",
-    objective: "Enfocar atención con movimientos simples",
+    name: "Foco equilibrante",
+    category: "Posturas equilibrantes",
+    objective: "Ordenar atención con torsión, lateralidad y eje",
     poses: [
-      { id: "seated", name: "Mirada al frente", cue: "Elegí un punto fijo y respiralo." },
-      { id: "arms-up", name: "Subir y bajar brazos", cue: "Mové brazos con ritmo lento." },
-      { id: "twist", name: "Torsión consciente", cue: "Girate siguiendo la respiración." },
-      { id: "forward-fold", name: "Cierre hacia adelante", cue: "Bajá y quedate unos segundos." },
-      { id: "seated", name: "Centro estable", cue: "Volvé arriba con calma." },
+      { id: "seated", name: "Eje y mirada", cue: "Alargá la columna y elegí un punto estable." },
+      { id: "side-stretch", name: "Inclinación lateral", cue: "Llevá un brazo arriba y abrí un costado." },
+      { id: "twist", name: "Torsión espinal", cue: "Girá desde el abdomen, con hombros suaves." },
+      { id: "arms-up", name: "Brazos coordinados", cue: "Subí y bajá brazos siguiendo el ritmo respiratorio." },
+      { id: "seated", name: "Centro estable", cue: "Volvé al eje y registrá la respiración nasal." },
     ],
   },
   "low energy": {
-    name: "Abrir vitalidad",
-    objective: "Activar cuerpo y ánimo",
+    name: "Vitalidad en silla",
+    category: "Posturas vitalizantes",
+    objective: "Estimular energía con extensiones y movimientos activos",
     poses: [
-      { id: "arms-up", name: "Brazos arriba", cue: "Subí brazos amplio y despertá el torso." },
-      { id: "heart-opener", name: "Apertura de pecho", cue: "Separá clavículas y respirá profundo." },
-      { id: "side-stretch", name: "Costados activos", cue: "Estirá un lado y el otro con presencia." },
-      { id: "shoulders", name: "Hombros en movimiento", cue: "Mové hombros para liberar energía." },
-      { id: "seated", name: "Cierre activo", cue: "Sentí el cuerpo más disponible." },
+      { id: "arms-up", name: "Elevación activa", cue: "Subí brazos con amplitud y despertá el torso." },
+      { id: "heart-opener", name: "Extensión hacia atrás", cue: "Abrí el pecho y llevá hombros suavemente atrás." },
+      { id: "shoulders", name: "Círculos estimulantes", cue: "Mové hombros con un ritmo un poco más vivo." },
+      { id: "side-stretch", name: "Lateral dinámico", cue: "Cambiá de lado con respiración amplia." },
+      { id: "seated", name: "Eje activo", cue: "Quedate sentado con la columna larga y energía disponible." },
     ],
   },
   "sleep better": {
-    name: "Cierre nocturno",
-    objective: "Tranquilizar y preparar descanso",
+    name: "Cierre tranquilizante",
+    category: "Posturas tranquilizantes",
+    objective: "Bajar energía y preparar descanso desde la silla",
     poses: [
-      { id: "seated", name: "Sentada tranquila", cue: "Apoyá manos y bajá la mirada." },
-      { id: "twist", name: "Torsión sentada", cue: "Girate suave hacia un lado y hacia el otro." },
-      { id: "arms-up", name: "Brazos largos", cue: "Subí brazos sin esfuerzo y soltá hombros." },
-      { id: "forward-fold", name: "Pinza hacia adelante", cue: "Cerrate en pinza y dejá caer la cabeza." },
-      { id: "seated", name: "Cierre en calma", cue: "Volvé lento y quedate en silencio." },
+      { id: "seated", name: "Asiento tranquilo", cue: "Apoyá manos sobre piernas y bajá la mirada." },
+      { id: "side-stretch", name: "Costados suaves", cue: "Estirá un lado y otro sin buscar intensidad." },
+      { id: "twist", name: "Torsión mínima", cue: "Girá apenas, como si desenredaras la espalda." },
+      { id: "forward-fold", name: "Flexión de descanso", cue: "Cerrá el torso hacia adelante y soltá el peso." },
+      { id: "seated", name: "Cierre en calma", cue: "Volvé lento y quedate respirando en silencio." },
     ],
   },
   balanced: {
-    name: "Equilibrio sentado",
-    objective: "Sostener calma y claridad",
+    name: "Armonía en silla",
+    category: "Posturas equilibrantes",
+    objective: "Balancear lateralidad, torsión y respiración nasal",
     poses: [
-      { id: "seated", name: "Eje sentado", cue: "Crecé desde la columna." },
-      { id: "arms-up", name: "Brazos arriba", cue: "Alargá el cuerpo con suavidad." },
-      { id: "twist", name: "Torsión equilibrada", cue: "Girate a ambos lados." },
-      { id: "side-stretch", name: "Estiramiento lateral", cue: "Abrí costados y respiración." },
-      { id: "seated", name: "Quietud final", cue: "Cerrá con una respiración natural." },
+      { id: "seated", name: "Eje sentado", cue: "Crecé desde la columna con pies estables." },
+      { id: "side-stretch", name: "Inclinación lateral", cue: "Abrí un costado y después el otro." },
+      { id: "twist", name: "Torsión equilibrante", cue: "Girá a ambos lados con el mismo tiempo." },
+      { id: "arms-up", name: "Respiración con brazos", cue: "Subí brazos al inhalar y bajalos al exhalar." },
+      { id: "seated", name: "Respiración nasal", cue: "Cerrá con atención en el flujo de aire por la nariz." },
     ],
   },
 };
 
 const POSTURE_GUIDES = {
   seated: {
-    src: "https://images.pexels.com/photos/7592387/pexels-photo-7592387.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona sentada en postura simple con la espalda larga.",
-    movement: "Apoyá la pelvis, relajá hombros y dejá que la espalda crezca.",
-    voice: "Sentate cómoda, apoyá la pelvis y dejá que los hombros bajen. Mantené una respiración natural.",
+    src: "https://images.pexels.com/photos/7113446/pexels-photo-7113446.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona practicando yoga sentada en una silla.",
+    movement: "Apoyá pies y pelvis, relajá hombros y alargá la columna.",
+    voice: "Sentate cerca del respaldo o del borde, con ambos pies apoyados. Alargá la columna y dejá que los hombros bajen.",
   },
   "arms-up": {
-    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona sentada elevando los brazos con suavidad.",
-    movement: "Subí los brazos al inhalar y aflojá el cuello al sostener.",
-    voice: "Elevá los brazos con suavidad. Crecé desde la cintura, sin endurecer el cuello ni la mandíbula.",
+    src: "https://images.pexels.com/photos/7113446/pexels-photo-7113446.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona en una silla elevando los brazos para estirar el torso.",
+    movement: "Subí brazos al inhalar, bajalos al exhalar y mantené pies firmes.",
+    voice: "Inhalá y elevá los brazos desde los costados. Exhalá y bajalos lento. Repetí sin tensar cuello ni mandíbula.",
   },
   twist: {
-    src: "https://images.unsplash.com/photo-1767611129027-c8c9e40c02e3?auto=format&fit=crop&w=1200&q=80",
-    alt: "Persona haciendo una torsión sentada de yoga.",
-    movement: "Girá desde el abdomen, primero a un lado y luego al otro.",
-    voice: "Girate despacio desde el abdomen. No fuerces el cuello. Volvé al centro y repetí hacia el otro lado.",
+    src: "https://images.pexels.com/photos/17999509/pexels-photo-17999509.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona usando una silla como apoyo para una torsión o estiramiento.",
+    movement: "Girá desde el abdomen con apoyo en el asiento o respaldo.",
+    voice: "Apoyá una mano en la silla y girá desde el abdomen. Mantené la espalda larga. Volvé al centro y cambiá de lado.",
   },
   "forward-fold": {
-    src: "https://images.pexels.com/photos/7500426/pexels-photo-7500426.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona realizando una pinza sentada hacia adelante.",
-    movement: "Cerrate hacia adelante y soltá el peso de la cabeza.",
-    voice: "Cerrate hacia adelante con calma. Soltá la cabeza, aflojá la espalda y dejá que la respiración te acompañe.",
+    src: "https://images.pexels.com/photos/6697186/pexels-photo-6697186.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona usando una silla para una flexión hacia adelante.",
+    movement: "Cerrá el torso hacia las piernas y dejá caer el peso de la cabeza.",
+    voice: "Desde la silla, dejá que el torso baje hacia las piernas. Soltá cabeza, cuello y espalda, sin empujar.",
   },
   "side-stretch": {
-    src: "https://images.pexels.com/photos/31427093/pexels-photo-31427093.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona haciendo un estiramiento lateral sentada.",
+    src: "https://images.pexels.com/photos/7113446/pexels-photo-7113446.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona en silla haciendo un estiramiento lateral de torso.",
     movement: "Alargá un costado, respiralo y cambiá hacia el otro lado.",
-    voice: "Llevá un brazo arriba y estirá un costado. Respirá ahí, volvé lento y cambiá hacia el otro lado.",
+    voice: "Llevá un brazo arriba e inclinate apenas hacia un lado. Respirá en las costillas, volvé y cambiá.",
   },
   "heart-opener": {
-    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona abriendo el pecho con los brazos elevados.",
-    movement: "Abrí clavículas, llevá hombros atrás y suavizá el pecho.",
-    voice: "Abrí el pecho sin empujar. Llevá los hombros hacia atrás y dejá que entre un poco más de aire.",
+    src: "https://images.pexels.com/photos/17999509/pexels-photo-17999509.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona estirando el pecho con apoyo de una silla.",
+    movement: "Abrí clavículas, llevá hombros atrás y mantené abdomen suave.",
+    voice: "Tomá el respaldo o los bordes de la silla. Abrí el pecho con suavidad, como una extensión hacia atrás.",
   },
   shoulders: {
-    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
-    alt: "Persona sentada moviendo hombros y brazos de forma suave.",
-    movement: "Hacé círculos lentos con hombros, hacia atrás y hacia abajo.",
-    voice: "Mové los hombros en círculos lentos. Suben, van hacia atrás y bajan, sin apuro.",
+    src: "https://images.pexels.com/photos/13424520/pexels-photo-13424520.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona practicando estiramientos con sillas como apoyo.",
+    movement: "Hacé círculos con hombros: suben, van atrás y bajan.",
+    voice: "Mové hombros en círculos. Suben, van hacia atrás y bajan. Dejá cuello y manos livianos.",
   },
 };
 
 const assetAvailability = new Map();
 
 const FEELINGS_AFTER = [
-  { id: "calm", label: "Más tranquila", hint: "Mi respiración se siente más amplia." },
-  { id: "focused", label: "Más enfocada", hint: "Tengo un poco más de claridad." },
-  { id: "rested", label: "Más descansada", hint: "El cuerpo bajó un cambio." },
-  { id: "energized", label: "Con más energía", hint: "Me siento suavemente activa." },
+  { id: "calm", label: "Más calma", hint: "Mi respiración se siente más amplia." },
+  { id: "focused", label: "Con más foco", hint: "Tengo un poco más de claridad." },
+  { id: "rested", label: "Con más descanso", hint: "El cuerpo bajó un cambio." },
+  { id: "energized", label: "Con más energía", hint: "Siento una activación suave." },
   { id: "same", label: "Igual que antes", hint: "Quiero registrarlo como parte del proceso." },
-  { id: "heavy", label: "Todavía cargada", hint: "Necesito más tiempo o una pausa distinta." },
+  { id: "heavy", label: "Con carga todavía", hint: "Necesito más tiempo o una pausa distinta." },
 ];
 
 const state = {
@@ -931,7 +938,7 @@ async function renderPosturePage(sessionId) {
           <p class="lead" data-posture-cue>${postureRoutine.poses[0].cue}</p>
           <p class="posture-movement" data-posture-movement>${postureGuideFor(postureRoutine.poses[0]).movement}</p>
           <div class="session-meta">
-            <span>${postureRoutine.objective}</span>
+            <span>${postureRoutine.category} · ${postureRoutine.objective}</span>
             <span class="audio-status" data-posture-step>1 de ${postureRoutine.poses.length}</span>
           </div>
         </div>

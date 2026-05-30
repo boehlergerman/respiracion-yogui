@@ -428,15 +428,15 @@ h3 {
 }
 
 .posture-space {
-  min-height: min(72vh, 680px);
+  min-height: min(68vh, 640px);
   display: grid;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
 }
 
 .posture-figure-wrap {
   width: min(100%, 560px);
-  height: clamp(260px, 48vh, 430px);
+  height: clamp(220px, 38vh, 390px);
   justify-self: center;
   display: grid;
   place-items: center;
@@ -473,7 +473,7 @@ h3 {
 }
 
 .posture-copy h2 {
-  font-size: clamp(2rem, 7vw, 3.8rem);
+  font-size: clamp(1.8rem, 6vw, 3.5rem);
 }
 
 .posture-movement {
