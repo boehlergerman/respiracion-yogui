@@ -187,6 +187,8 @@ const state = {
     remainingSeconds: 0,
     currentPhaseIndex: 0,
     currentPhaseLabel: "",
+    endingWarned: false,
+    finishing: false,
   },
   audio: {
     context: null,
@@ -465,12 +467,12 @@ async function renderFeedbackPage(sessionId) {
   stopSessionTimers();
   const session = await getRecord("Session", sessionId);
   if (!session) return navigate("moods");
+  const insights = await buildSessionInsights();
 
   app.className = "app-shell";
   app.innerHTML = `
     <section class="screen screen-wide panel">
       ${brandBar("moods")}
-      <p class="eyebrow">Cierre</p>
       <h2>¿Cómo te sientes después?</h2>
       <p class="lead">Elige una respuesta para guardar tu sesión.</p>
       <div class="feedback-grid">
@@ -484,6 +486,9 @@ async function renderFeedbackPage(sessionId) {
         ).join("")}
       </div>
       <p class="saved-note" data-saved hidden>Sesión guardada.</p>
+      <div class="insights" data-insights>
+        ${renderInsights(insights)}
+      </div>
       <div class="actions">
         <button class="button button-secondary" type="button" data-route="moods">Nueva rutina</button>
       </div>
@@ -500,6 +505,7 @@ async function renderFeedbackPage(sessionId) {
       session.date = session.date || new Date().toISOString();
       await putRecord("Session", session);
       document.querySelector("[data-saved]").hidden = false;
+      document.querySelector("[data-insights]").innerHTML = renderInsights(await buildSessionInsights());
     });
   });
 }
@@ -539,6 +545,67 @@ function sentenceCase(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
+async function buildSessionInsights() {
+  const [sessions, routines] = await Promise.all([getAll("Session"), getAll("Routine")]);
+  const routineById = new Map(routines.map((routine) => [routine.id, routine]));
+  const completedSessions = sessions.filter((session) => session.user === state.user.id && session.completed);
+  const afterSessions = completedSessions
+    .filter((session) => session.mood_after)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  return {
+    totalCompleted: completedSessions.length,
+    favoriteRoutine: mostFrequent(
+      completedSessions
+        .map((session) => routineById.get(session.routine)?.name)
+        .filter(Boolean),
+    ),
+    topFeeling: mostFrequent(afterSessions.map((session) => feelingLabel(session.mood_after))),
+    latestFeeling: feelingLabel(afterSessions[afterSessions.length - 1]?.mood_after),
+  };
+}
+
+function mostFrequent(values) {
+  const counts = values.reduce((map, value) => map.set(value, (map.get(value) || 0) + 1), new Map());
+  const [label, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] || [];
+  return label ? { label, count } : null;
+}
+
+function feelingLabel(id) {
+  return FEELINGS_AFTER.find((feeling) => feeling.id === id)?.label || "";
+}
+
+function renderInsights(insights) {
+  if (!insights.totalCompleted) {
+    return `
+      <h3>Tu práctica</h3>
+      <p>Cuando guardes tus sesiones, vas a ver acá tus rutinas más usadas y cómo te sentís después.</p>
+    `;
+  }
+
+  return `
+    <h3>Tu práctica</h3>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <span>Sesiones completas</span>
+        <strong>${insights.totalCompleted}</strong>
+      </div>
+      <div class="insight-card">
+        <span>Rutina más usada</span>
+        <strong>${insights.favoriteRoutine ? `${insights.favoriteRoutine.label} (${insights.favoriteRoutine.count})` : "Sin datos"}</strong>
+      </div>
+      <div class="insight-card">
+        <span>Después te sentís más seguido</span>
+        <strong>${insights.topFeeling ? `${insights.topFeeling.label} (${insights.topFeeling.count})` : "Sin datos"}</strong>
+      </div>
+      <div class="insight-card">
+        <span>Último registro</span>
+        <strong>${insights.latestFeeling || "Sin datos"}</strong>
+      </div>
+    </div>
+  `;
+}
+
 function startBreathingSession(routine, sessionId) {
   stopSessionTimers();
 
@@ -550,6 +617,8 @@ function startBreathingSession(routine, sessionId) {
     remainingSeconds: routine.duration_minutes * 60,
     currentPhaseIndex: 0,
     currentPhaseLabel: "",
+    endingWarned: false,
+    finishing: false,
   };
 
   startRoutineAudio(routine);
@@ -562,8 +631,12 @@ function startBreathingSession(routine, sessionId) {
     state.session.remainingSeconds -= 1;
     renderTimer();
 
+    if (state.session.remainingSeconds <= 15 && !state.session.endingWarned) {
+      prepareSessionEnding();
+    }
+
     if (state.session.remainingSeconds <= 0) {
-      finishSession(sessionId, true);
+      finishSession(sessionId, true, { fromTimer: true });
     }
   }, 1000);
 }
@@ -585,12 +658,12 @@ function runPhase() {
   const phases = buildPhases(state.routine);
   const phase = phases[state.session.currentPhaseIndex % phases.length];
 
-  instruction.textContent = phase.label;
+  if (!state.session.endingWarned) instruction.textContent = phase.label;
   state.session.currentPhaseLabel = phase.label;
   circle.style.setProperty("--phase-ms", `${phase.seconds * 1000}ms`);
   circle.style.setProperty("--breath-scale", String(phase.scale));
   circle.style.transitionTimingFunction = phase.easing;
-  speakInstruction(phase.label);
+  if (!state.session.endingWarned) speakInstruction(phase.label);
 
   state.session.phaseTimeoutId = window.setTimeout(() => {
     state.session.currentPhaseIndex += 1;
@@ -601,6 +674,7 @@ function runPhase() {
 function togglePause() {
   const button = document.querySelector("[data-pause]");
   const circle = document.querySelector("[data-circle]");
+  if (state.session.finishing) return;
   state.session.paused = !state.session.paused;
   button.textContent = state.session.paused ? "Continuar" : "Pausar";
 
@@ -617,8 +691,32 @@ function togglePause() {
   runPhase();
 }
 
-async function finishSession(sessionId, completed) {
-  stopSessionTimers();
+function prepareSessionEnding() {
+  state.session.endingWarned = true;
+  const instruction = document.querySelector("[data-instruction]");
+  if (instruction) instruction.textContent = "Cerrando";
+  fadeRoutineAudioTo(Math.max(TRACK_VOLUME * 0.42, 0.12), 5);
+  speakClosingNotice();
+}
+
+async function finishSession(sessionId, completed, options = {}) {
+  if (state.session.finishing) return;
+  state.session.finishing = true;
+  window.clearInterval(state.session.intervalId);
+  window.clearTimeout(state.session.phaseTimeoutId);
+  fadeRoutineAudioTo(0.0001, completed ? 1.4 : 0.6);
+
+  if (options.fromTimer) {
+    const instruction = document.querySelector("[data-instruction]");
+    if (instruction) instruction.textContent = "Terminamos";
+    await wait(1400);
+  } else {
+    await wait(500);
+  }
+
+  stopVoice();
+  stopRoutineAudio();
+  state.session.running = false;
   const session = await getRecord("Session", sessionId);
   if (session) {
     session.completed = completed;
@@ -796,10 +894,7 @@ function pauseRoutineAudio(paused) {
   const gain = state.audio.musicGain;
   if (!context || !gain) return;
 
-  const now = context.currentTime;
-  gain.gain.cancelScheduledValues(now);
-  gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-  gain.gain.exponentialRampToValueAtTime(paused ? 0.0001 : TRACK_VOLUME, now + 0.8);
+  fadeRoutineAudioTo(paused ? 0.0001 : TRACK_VOLUME, 0.8);
 
   if (state.audio.musicElement) {
     if (paused) {
@@ -810,6 +905,17 @@ function pauseRoutineAudio(paused) {
       state.audio.musicElement.play().catch(() => {});
     }
   }
+}
+
+function fadeRoutineAudioTo(targetVolume, durationSeconds) {
+  const context = state.audio.context;
+  const gain = state.audio.musicGain;
+  if (!context || !gain) return;
+
+  const now = context.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+  gain.gain.exponentialRampToValueAtTime(Math.max(targetVolume, 0.0001), now + durationSeconds);
 }
 
 function stopRoutineAudio() {
@@ -997,6 +1103,23 @@ function speakInstruction(label) {
   window.speechSynthesis.speak(utterance);
 }
 
+function speakClosingNotice() {
+  if (!state.audio.voiceEnabled || !("speechSynthesis" in window)) return;
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance("Tu respiración está por terminar");
+  utterance.lang = state.audio.spanishVoice?.lang || "es-MX";
+  utterance.rate = VOICE_RATE;
+  utterance.pitch = VOICE_PITCH;
+  utterance.volume = VOICE_VOLUME;
+  if (state.audio.spanishVoice) utterance.voice = state.audio.spanishVoice;
+  window.speechSynthesis.speak(utterance);
+}
+
 function stopVoice() {
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
