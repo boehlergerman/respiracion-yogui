@@ -165,6 +165,86 @@ const MUSIC_THEMES = {
   },
 };
 
+const POSTURE_ROUTINES = {
+  anxious: {
+    name: "Soltar el pecho",
+    objective: "Bajar ansiedad y aflojar el torso",
+    poses: [
+      { id: "seated", name: "Sentada con manos al corazón", cue: "Apoyá los pies y suavizá los hombros." },
+      { id: "arms-up", name: "Brazos arriba", cue: "Inhalá alargando costados sin tensionar el cuello." },
+      { id: "twist", name: "Torsión sentada", cue: "Girate suave hacia un lado y luego hacia el otro." },
+      { id: "forward-fold", name: "Pinza sentada", cue: "Cerrate hacia adelante y soltá la cabeza." },
+      { id: "seated", name: "Cierre en quietud", cue: "Volvé al centro y observá el cuerpo." },
+    ],
+  },
+  stressed: {
+    name: "Descarga suave",
+    objective: "Aflojar hombros, cuello y espalda alta",
+    poses: [
+      { id: "shoulders", name: "Círculos de hombros", cue: "Mové hombros lento hacia atrás y hacia abajo." },
+      { id: "side-stretch", name: "Estiramiento lateral", cue: "Llevá un brazo arriba y abrí un costado." },
+      { id: "twist", name: "Torsión sentada", cue: "Girate sin forzar y respirá en la espalda." },
+      { id: "forward-fold", name: "Pinza suave", cue: "Dejá que el peso te cierre hacia adelante." },
+      { id: "seated", name: "Manos sobre piernas", cue: "Quedate quieta y soltá la mandíbula." },
+    ],
+  },
+  tired: {
+    name: "Descanso despierto",
+    objective: "Recuperar energía sin exigencia",
+    poses: [
+      { id: "seated", name: "Base sentada", cue: "Sentate cómoda y apoyá bien la pelvis." },
+      { id: "arms-up", name: "Alargar columna", cue: "Subí brazos y crecé desde la cintura." },
+      { id: "side-stretch", name: "Abrir costados", cue: "Estirá un lado y después el otro." },
+      { id: "heart-opener", name: "Abrir pecho", cue: "Llevá hombros atrás y abrí el corazón." },
+      { id: "seated", name: "Integrar", cue: "Respirá natural y notá la energía disponible." },
+    ],
+  },
+  distracted: {
+    name: "Volver al centro",
+    objective: "Enfocar atención con movimientos simples",
+    poses: [
+      { id: "seated", name: "Mirada al frente", cue: "Elegí un punto fijo y respiralo." },
+      { id: "arms-up", name: "Subir y bajar brazos", cue: "Mové brazos con ritmo lento." },
+      { id: "twist", name: "Torsión consciente", cue: "Girate siguiendo la respiración." },
+      { id: "forward-fold", name: "Cierre hacia adelante", cue: "Bajá y quedate unos segundos." },
+      { id: "seated", name: "Centro estable", cue: "Volvé arriba con calma." },
+    ],
+  },
+  "low energy": {
+    name: "Abrir vitalidad",
+    objective: "Activar cuerpo y ánimo",
+    poses: [
+      { id: "arms-up", name: "Brazos arriba", cue: "Subí brazos amplio y despertá el torso." },
+      { id: "heart-opener", name: "Apertura de pecho", cue: "Separá clavículas y respirá profundo." },
+      { id: "side-stretch", name: "Costados activos", cue: "Estirá un lado y el otro con presencia." },
+      { id: "shoulders", name: "Hombros en movimiento", cue: "Mové hombros para liberar energía." },
+      { id: "seated", name: "Cierre activo", cue: "Sentí el cuerpo más disponible." },
+    ],
+  },
+  "sleep better": {
+    name: "Cierre nocturno",
+    objective: "Tranquilizar y preparar descanso",
+    poses: [
+      { id: "seated", name: "Sentada tranquila", cue: "Apoyá manos y bajá la mirada." },
+      { id: "twist", name: "Torsión sentada", cue: "Girate suave hacia un lado y hacia el otro." },
+      { id: "arms-up", name: "Brazos largos", cue: "Subí brazos sin esfuerzo y soltá hombros." },
+      { id: "forward-fold", name: "Pinza hacia adelante", cue: "Cerrate en pinza y dejá caer la cabeza." },
+      { id: "seated", name: "Cierre en calma", cue: "Volvé lento y quedate en silencio." },
+    ],
+  },
+  balanced: {
+    name: "Equilibrio sentado",
+    objective: "Sostener calma y claridad",
+    poses: [
+      { id: "seated", name: "Eje sentado", cue: "Crecé desde la columna." },
+      { id: "arms-up", name: "Brazos arriba", cue: "Alargá el cuerpo con suavidad." },
+      { id: "twist", name: "Torsión equilibrada", cue: "Girate a ambos lados." },
+      { id: "side-stretch", name: "Estiramiento lateral", cue: "Abrí costados y respiración." },
+      { id: "seated", name: "Quietud final", cue: "Cerrá con una respiración natural." },
+    ],
+  },
+};
+
 const assetAvailability = new Map();
 
 const FEELINGS_AFTER = [
@@ -193,6 +273,13 @@ const state = {
     currentPhaseLabel: "",
     endingWarned: false,
     finishing: false,
+  },
+  posture: {
+    running: false,
+    paused: false,
+    intervalId: null,
+    remainingSeconds: 0,
+    currentPoseIndex: 0,
   },
   audio: {
     context: null,
@@ -331,18 +418,21 @@ async function putRecord(storeName, record) {
 async function getRecord(storeName, id) {
   if (isSupabaseEnabled()) {
     if (storeName === "Routine") {
+      if (!isUuid(id)) return null;
       const { data, error } = await state.supabase.from("routines").select("*").eq("id", id).single();
       if (error) throw error;
       return fromSupabaseRoutine(data);
     }
 
     if (storeName === "Session") {
+      if (!isUuid(id)) return null;
       const { data, error } = await state.supabase.from("sessions").select("*").eq("id", id).single();
       if (error) throw error;
       return fromSupabaseSession(data);
     }
 
     if (storeName === "User") {
+      if (!isUuid(id)) return null;
       const { data, error } = await state.supabase.from("profiles").select("*").eq("id", id).single();
       if (error) throw error;
       return fromSupabaseProfile(data);
@@ -351,6 +441,14 @@ async function getRecord(storeName, id) {
 
   const localKey = Number.isNaN(Number(id)) ? id : Number(id);
   return requestToPromise(tx(storeName).get(localKey));
+}
+
+async function safeGetRecord(storeName, id) {
+  try {
+    return await getRecord(storeName, id);
+  } catch (error) {
+    return null;
+  }
 }
 
 async function seedRoutines() {
@@ -452,6 +550,10 @@ function normalizeAlias(value) {
     .replace(/[^a-z0-9_]/g, "");
 }
 
+function isUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value));
+}
+
 async function hashPin(alias, pin) {
   const data = new TextEncoder().encode(`${alias}:${pin}:respiracion-yogui-v0`);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -512,6 +614,7 @@ function getRoute() {
 
 async function renderRoute() {
   stopSessionTimers();
+  stopPostureTimers();
   const route = getRoute();
 
   if (route === "auth") return renderAuthPage();
@@ -519,6 +622,7 @@ async function renderRoute() {
   if (route === "moods") return renderMoodPage();
   if (route.startsWith("routine/")) return renderRoutinePage(route.split("/")[1]);
   if (route.startsWith("session/")) return renderSessionPage(route.split("/")[1]);
+  if (route.startsWith("postures/")) return renderPosturePage(route.split("/")[1]);
   if (route.startsWith("feedback/")) return renderFeedbackPage(route.split("/")[1]);
 
   renderWelcomePage();
@@ -600,7 +704,7 @@ function renderMoodPage() {
 }
 
 async function renderRoutinePage(routineId) {
-  const routine = await getRecord("Routine", routineId);
+  const routine = await safeGetRecord("Routine", routineId);
   if (!routine) return navigate("moods");
 
   state.routine = routine;
@@ -660,10 +764,10 @@ async function renderRoutinePage(routineId) {
 }
 
 async function renderSessionPage(sessionId) {
-  const session = await getRecord("Session", sessionId);
+  const session = await safeGetRecord("Session", sessionId);
   if (!session) return navigate("moods");
 
-  const routine = await getRecord("Routine", session.routine);
+  const routine = await safeGetRecord("Routine", session.routine);
   if (!routine) return navigate("moods");
 
   state.sessionId = session.id;
@@ -705,7 +809,8 @@ async function renderSessionPage(sessionId) {
 
 async function renderFeedbackPage(sessionId) {
   stopSessionTimers();
-  const session = await getRecord("Session", sessionId);
+  stopPostureTimers();
+  const session = await safeGetRecord("Session", sessionId);
   if (!session) return navigate("moods");
   const insights = await buildSessionInsights();
 
@@ -748,6 +853,50 @@ async function renderFeedbackPage(sessionId) {
       document.querySelector("[data-insights]").innerHTML = renderInsights(await buildSessionInsights());
     });
   });
+}
+
+async function renderPosturePage(sessionId) {
+  const session = await safeGetRecord("Session", sessionId);
+  if (!session) return navigate("moods");
+
+  const routine = await safeGetRecord("Routine", session.routine);
+  if (!routine) return navigate("moods");
+
+  const postureRoutine = postureRoutineFor(routine.mood);
+  state.sessionId = session.id;
+  state.routine = routine;
+
+  app.className = "app-shell";
+  app.innerHTML = `
+    <section class="session-screen posture-screen">
+      <div class="topbar">
+        <div class="brand"><span class="brand-mark"></span><span>${postureRoutine.name}</span></div>
+        <div class="timer" data-posture-timer>${formatTime(5 * 60)}</div>
+      </div>
+      <div class="posture-space">
+        <div class="posture-figure-wrap">
+          ${postureFigure("seated")}
+        </div>
+        <div class="posture-copy">
+          <p class="eyebrow">5 minutos de posturas</p>
+          <h2 data-posture-name>${postureRoutine.poses[0].name}</h2>
+          <p class="lead" data-posture-cue>${postureRoutine.poses[0].cue}</p>
+          <div class="session-meta">
+            <span>${postureRoutine.objective}</span>
+            <span class="audio-status" data-posture-step>1 de ${postureRoutine.poses.length}</span>
+          </div>
+        </div>
+        <div class="actions" style="justify-content: center;">
+          <button class="button button-soft" type="button" data-posture-pause>Pausar</button>
+          <button class="button button-danger" type="button" data-posture-finish>Finalizar</button>
+        </div>
+      </div>
+    </section>
+  `;
+
+  startPostureSession(postureRoutine, session.id);
+  document.querySelector("[data-posture-pause]").addEventListener("click", togglePosturePause);
+  document.querySelector("[data-posture-finish]").addEventListener("click", () => finishPostureSession(session.id));
 }
 
 async function routineForMood(mood) {
@@ -970,7 +1119,7 @@ async function finishSession(sessionId, completed, options = {}) {
     session.date = session.date || new Date().toISOString();
     await putRecord("Session", session);
   }
-  navigate(`feedback/${sessionId}`);
+  navigate(`postures/${sessionId}`);
 }
 
 function stopSessionTimers() {
@@ -979,6 +1128,72 @@ function stopSessionTimers() {
   stopVoice();
   stopRoutineAudio();
   state.session.running = false;
+}
+
+function startPostureSession(routine, sessionId) {
+  stopPostureTimers();
+  state.posture = {
+    running: true,
+    paused: false,
+    intervalId: null,
+    remainingSeconds: 5 * 60,
+    currentPoseIndex: 0,
+  };
+
+  renderPosturePose(routine);
+  renderPostureTimer();
+
+  state.posture.intervalId = window.setInterval(() => {
+    if (state.posture.paused) return;
+
+    state.posture.remainingSeconds -= 1;
+    const poseDuration = Math.ceil((5 * 60) / routine.poses.length);
+    state.posture.currentPoseIndex = Math.min(
+      routine.poses.length - 1,
+      Math.floor((5 * 60 - state.posture.remainingSeconds) / poseDuration),
+    );
+
+    renderPostureTimer();
+    renderPosturePose(routine);
+
+    if (state.posture.remainingSeconds <= 0) {
+      finishPostureSession(sessionId);
+    }
+  }, 1000);
+}
+
+function renderPosturePose(routine) {
+  const pose = routine.poses[state.posture.currentPoseIndex] || routine.poses[0];
+  const figure = document.querySelector("[data-posture-figure]");
+  const name = document.querySelector("[data-posture-name]");
+  const cue = document.querySelector("[data-posture-cue]");
+  const step = document.querySelector("[data-posture-step]");
+
+  if (figure) figure.dataset.pose = pose.id;
+  if (name) name.textContent = pose.name;
+  if (cue) cue.textContent = pose.cue;
+  if (step) step.textContent = `${state.posture.currentPoseIndex + 1} de ${routine.poses.length}`;
+}
+
+function renderPostureTimer() {
+  const timer = document.querySelector("[data-posture-timer]");
+  if (timer) timer.textContent = formatTime(Math.max(0, state.posture.remainingSeconds));
+}
+
+function togglePosturePause() {
+  const button = document.querySelector("[data-posture-pause]");
+  state.posture.paused = !state.posture.paused;
+  if (button) button.textContent = state.posture.paused ? "Continuar" : "Pausar";
+}
+
+function finishPostureSession(sessionId) {
+  stopPostureTimers();
+  navigate(`feedback/${sessionId}`);
+}
+
+function stopPostureTimers() {
+  window.clearInterval(state.posture.intervalId);
+  state.posture.running = false;
 }
 
 function renderTimer() {
@@ -994,6 +1209,24 @@ function formatTime(totalSeconds) {
 
 function musicThemeFor(routine) {
   return MUSIC_THEMES[routine.mood] || MUSIC_THEMES.balanced;
+}
+
+function postureRoutineFor(mood) {
+  return POSTURE_ROUTINES[mood] || POSTURE_ROUTINES.balanced;
+}
+
+function postureFigure(pose) {
+  return `
+    <div class="posture-figure" data-posture-figure data-pose="${pose}" aria-hidden="true">
+      <span class="figure-head"></span>
+      <span class="figure-torso"></span>
+      <span class="figure-arm figure-arm-left"></span>
+      <span class="figure-arm figure-arm-right"></span>
+      <span class="figure-leg figure-leg-left"></span>
+      <span class="figure-leg figure-leg-right"></span>
+      <span class="figure-ground"></span>
+    </div>
+  `;
 }
 
 function isAudioEnabled() {
