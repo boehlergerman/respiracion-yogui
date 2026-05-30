@@ -4,6 +4,7 @@ const SUPABASE_URL = "https://gdxfolbvlfzeyyddfnck.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_FoXU2fyxg-xuCI4HmILYGA_yzD7yLPM";
 const PROFILE_STORAGE_KEY = "respiracion-yogui-profile";
 const TRACK_VOLUME = 0.34;
+const POSTURE_MUSIC_VOLUME = 0.18;
 const RAIN_VOLUME = 0.08;
 const VOICE_RATE = 0.74;
 const VOICE_PITCH = 1.08;
@@ -245,6 +246,51 @@ const POSTURE_ROUTINES = {
   },
 };
 
+const POSTURE_GUIDES = {
+  seated: {
+    src: "https://images.pexels.com/photos/7592387/pexels-photo-7592387.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona sentada en postura simple con la espalda larga.",
+    movement: "Apoyá la pelvis, relajá hombros y dejá que la espalda crezca.",
+    voice: "Sentate cómoda, apoyá la pelvis y dejá que los hombros bajen. Mantené una respiración natural.",
+  },
+  "arms-up": {
+    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona sentada elevando los brazos con suavidad.",
+    movement: "Subí los brazos al inhalar y aflojá el cuello al sostener.",
+    voice: "Elevá los brazos con suavidad. Crecé desde la cintura, sin endurecer el cuello ni la mandíbula.",
+  },
+  twist: {
+    src: "https://images.unsplash.com/photo-1767611129027-c8c9e40c02e3?auto=format&fit=crop&w=1200&q=80",
+    alt: "Persona haciendo una torsión sentada de yoga.",
+    movement: "Girá desde el abdomen, primero a un lado y luego al otro.",
+    voice: "Girate despacio desde el abdomen. No fuerces el cuello. Volvé al centro y repetí hacia el otro lado.",
+  },
+  "forward-fold": {
+    src: "https://images.pexels.com/photos/7500426/pexels-photo-7500426.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona realizando una pinza sentada hacia adelante.",
+    movement: "Cerrate hacia adelante y soltá el peso de la cabeza.",
+    voice: "Cerrate hacia adelante con calma. Soltá la cabeza, aflojá la espalda y dejá que la respiración te acompañe.",
+  },
+  "side-stretch": {
+    src: "https://images.pexels.com/photos/31427093/pexels-photo-31427093.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona haciendo un estiramiento lateral sentada.",
+    movement: "Alargá un costado, respiralo y cambiá hacia el otro lado.",
+    voice: "Llevá un brazo arriba y estirá un costado. Respirá ahí, volvé lento y cambiá hacia el otro lado.",
+  },
+  "heart-opener": {
+    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona abriendo el pecho con los brazos elevados.",
+    movement: "Abrí clavículas, llevá hombros atrás y suavizá el pecho.",
+    voice: "Abrí el pecho sin empujar. Llevá los hombros hacia atrás y dejá que entre un poco más de aire.",
+  },
+  shoulders: {
+    src: "https://images.pexels.com/photos/8534274/pexels-photo-8534274.jpeg?auto=compress&cs=tinysrgb&w=1200",
+    alt: "Persona sentada moviendo hombros y brazos de forma suave.",
+    movement: "Hacé círculos lentos con hombros, hacia atrás y hacia abajo.",
+    voice: "Mové los hombros en círculos lentos. Suben, van hacia atrás y bajan, sin apuro.",
+  },
+};
+
 const assetAvailability = new Map();
 
 const FEELINGS_AFTER = [
@@ -280,6 +326,7 @@ const state = {
     intervalId: null,
     remainingSeconds: 0,
     currentPoseIndex: 0,
+    lastSpokenIndex: -1,
   },
   audio: {
     context: null,
@@ -613,9 +660,10 @@ function getRoute() {
 }
 
 async function renderRoute() {
-  stopSessionTimers();
-  stopPostureTimers();
   const route = getRoute();
+  const keepRoutineAudio = route.startsWith("postures/");
+  stopSessionTimers({ keepAudio: keepRoutineAudio });
+  stopPostureTimers();
 
   if (route === "auth") return renderAuthPage();
   if (isSupabaseEnabled() && !state.user && route !== "welcome") return renderAuthPage();
@@ -875,12 +923,13 @@ async function renderPosturePage(sessionId) {
       </div>
       <div class="posture-space">
         <div class="posture-figure-wrap">
-          ${postureFigure("seated")}
+          ${postureVisual(postureRoutine.poses[0])}
         </div>
         <div class="posture-copy">
           <p class="eyebrow">5 minutos de posturas</p>
           <h2 data-posture-name>${postureRoutine.poses[0].name}</h2>
           <p class="lead" data-posture-cue>${postureRoutine.poses[0].cue}</p>
+          <p class="posture-movement" data-posture-movement>${postureGuideFor(postureRoutine.poses[0]).movement}</p>
           <div class="session-meta">
             <span>${postureRoutine.objective}</span>
             <span class="audio-status" data-posture-step>1 de ${postureRoutine.poses.length}</span>
@@ -1100,7 +1149,7 @@ async function finishSession(sessionId, completed, options = {}) {
   state.session.finishing = true;
   window.clearInterval(state.session.intervalId);
   window.clearTimeout(state.session.phaseTimeoutId);
-  fadeRoutineAudioTo(0.0001, completed ? 1.4 : 0.6);
+  fadeRoutineAudioTo(POSTURE_MUSIC_VOLUME, completed ? 1.4 : 0.6);
 
   if (options.fromTimer) {
     const instruction = document.querySelector("[data-instruction]");
@@ -1111,7 +1160,6 @@ async function finishSession(sessionId, completed, options = {}) {
   }
 
   stopVoice();
-  stopRoutineAudio();
   state.session.running = false;
   const session = await getRecord("Session", sessionId);
   if (session) {
@@ -1122,11 +1170,11 @@ async function finishSession(sessionId, completed, options = {}) {
   navigate(`postures/${sessionId}`);
 }
 
-function stopSessionTimers() {
+function stopSessionTimers(options = {}) {
   window.clearInterval(state.session.intervalId);
   window.clearTimeout(state.session.phaseTimeoutId);
   stopVoice();
-  stopRoutineAudio();
+  if (!options.keepAudio) stopRoutineAudio();
   state.session.running = false;
 }
 
@@ -1138,7 +1186,14 @@ function startPostureSession(routine, sessionId) {
     intervalId: null,
     remainingSeconds: 5 * 60,
     currentPoseIndex: 0,
+    lastSpokenIndex: -1,
   };
+
+  if (state.audio.musicEnabled && state.audio.unlocked && state.routine) {
+    startRoutineAudio(state.routine).then(() => fadeRoutineAudioTo(POSTURE_MUSIC_VOLUME, 1.2));
+  } else {
+    fadeRoutineAudioTo(POSTURE_MUSIC_VOLUME, 1.2);
+  }
 
   renderPosturePose(routine);
   renderPostureTimer();
@@ -1164,15 +1219,22 @@ function startPostureSession(routine, sessionId) {
 
 function renderPosturePose(routine) {
   const pose = routine.poses[state.posture.currentPoseIndex] || routine.poses[0];
-  const figure = document.querySelector("[data-posture-figure]");
+  const guide = postureGuideFor(pose);
   const name = document.querySelector("[data-posture-name]");
   const cue = document.querySelector("[data-posture-cue]");
+  const movement = document.querySelector("[data-posture-movement]");
   const step = document.querySelector("[data-posture-step]");
 
-  if (figure) figure.dataset.pose = pose.id;
+  updatePostureVisual(pose);
   if (name) name.textContent = pose.name;
   if (cue) cue.textContent = pose.cue;
+  if (movement) movement.textContent = guide.movement;
   if (step) step.textContent = `${state.posture.currentPoseIndex + 1} de ${routine.poses.length}`;
+
+  if (!state.posture.paused && state.posture.lastSpokenIndex !== state.posture.currentPoseIndex) {
+    state.posture.lastSpokenIndex = state.posture.currentPoseIndex;
+    speakPostureCue(pose);
+  }
 }
 
 function renderPostureTimer() {
@@ -1184,10 +1246,25 @@ function togglePosturePause() {
   const button = document.querySelector("[data-posture-pause]");
   state.posture.paused = !state.posture.paused;
   if (button) button.textContent = state.posture.paused ? "Continuar" : "Pausar";
+  pauseRoutineAudio(state.posture.paused, POSTURE_MUSIC_VOLUME);
+
+  if (state.posture.paused) {
+    stopVoice();
+    return;
+  }
+
+  const routine = postureRoutineFor(state.routine?.mood);
+  const pose = routine.poses[state.posture.currentPoseIndex] || routine.poses[0];
+  speakPostureCue(pose);
 }
 
-function finishPostureSession(sessionId) {
+async function finishPostureSession(sessionId) {
+  if (!state.posture.running) return;
   stopPostureTimers();
+  stopVoice();
+  fadeRoutineAudioTo(0.0001, 0.9);
+  await wait(500);
+  stopRoutineAudio();
   navigate(`feedback/${sessionId}`);
 }
 
@@ -1213,6 +1290,50 @@ function musicThemeFor(routine) {
 
 function postureRoutineFor(mood) {
   return POSTURE_ROUTINES[mood] || POSTURE_ROUTINES.balanced;
+}
+
+function postureGuideFor(pose) {
+  return POSTURE_GUIDES[pose?.id] || POSTURE_GUIDES.seated;
+}
+
+function postureVisual(pose) {
+  const guide = postureGuideFor(pose);
+  return `
+    <div class="posture-image-card">
+      <img
+        class="posture-image"
+        data-posture-image
+        src="${guide.src}"
+        alt="${guide.alt}"
+        loading="eager"
+      />
+      <div class="posture-image-fallback" data-posture-fallback hidden>
+        ${postureFigure(pose.id)}
+      </div>
+    </div>
+  `;
+}
+
+function updatePostureVisual(pose) {
+  const guide = postureGuideFor(pose);
+  const image = document.querySelector("[data-posture-image]");
+  const fallback = document.querySelector("[data-posture-fallback]");
+  const figure = document.querySelector("[data-posture-figure]");
+
+  if (figure) figure.dataset.pose = pose.id;
+  if (!image) return;
+
+  image.onload = () => {
+    image.hidden = false;
+    if (fallback) fallback.hidden = true;
+  };
+  image.onerror = () => {
+    image.hidden = true;
+    if (fallback) fallback.hidden = false;
+  };
+
+  if (image.src !== guide.src) image.src = guide.src;
+  image.alt = guide.alt;
 }
 
 function postureFigure(pose) {
@@ -1369,17 +1490,17 @@ async function startRoutineAudio(routine) {
   syncAudioUi();
 }
 
-function pauseRoutineAudio(paused) {
+function pauseRoutineAudio(paused, targetVolume = TRACK_VOLUME) {
   const context = state.audio.context;
   const gain = state.audio.musicGain;
   if (!context || !gain) return;
 
-  fadeRoutineAudioTo(paused ? 0.0001 : TRACK_VOLUME, 0.8);
+  fadeRoutineAudioTo(paused ? 0.0001 : targetVolume, 0.8);
 
   if (state.audio.musicElement) {
     if (paused) {
       window.setTimeout(() => {
-        if (state.session.paused && state.audio.musicElement) state.audio.musicElement.pause();
+        if ((state.session.paused || state.posture.paused) && state.audio.musicElement) state.audio.musicElement.pause();
       }, 850);
     } else {
       state.audio.musicElement.play().catch(() => {});
@@ -1588,6 +1709,20 @@ function speakClosingNotice() {
 
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance("Tu respiración está por terminar");
+  utterance.lang = state.audio.spanishVoice?.lang || "es-MX";
+  utterance.rate = VOICE_RATE;
+  utterance.pitch = VOICE_PITCH;
+  utterance.volume = VOICE_VOLUME;
+  if (state.audio.spanishVoice) utterance.voice = state.audio.spanishVoice;
+  window.speechSynthesis.speak(utterance);
+}
+
+function speakPostureCue(pose) {
+  if (!state.audio.voiceEnabled || state.posture.paused || !("speechSynthesis" in window)) return;
+
+  const guide = postureGuideFor(pose);
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(`Ahora, ${pose.name}. ${guide.voice}`);
   utterance.lang = state.audio.spanishVoice?.lang || "es-MX";
   utterance.rate = VOICE_RATE;
   utterance.pitch = VOICE_PITCH;
