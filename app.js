@@ -855,11 +855,8 @@ async function audioAssetExists(url) {
   if (assetAvailability.has(url)) return assetAvailability.get(url);
 
   try {
-    const folder = url.slice(0, url.lastIndexOf("/") + 1);
-    const fileName = url.slice(url.lastIndexOf("/") + 1);
-    const response = await fetch(folder, { cache: "no-store" });
-    const listing = response.ok ? await response.text() : "";
-    const exists = listing.includes(fileName) || listing.includes(encodeURIComponent(fileName));
+    const response = await fetch(url, { method: "HEAD", cache: "no-store" });
+    const exists = response.ok;
     assetAvailability.set(url, exists);
     return exists;
   } catch (error) {
